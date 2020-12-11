@@ -4,6 +4,9 @@ library(shinyalert)
 library(plotly)
 library(DT)
 library(openxlsx)
+library(DBI)
+library(RPostgreSQL)
+library(RPostgres)
 
 
 # 1) CONEXIÓN BBDD
