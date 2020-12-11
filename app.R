@@ -483,6 +483,8 @@ ui <- fluidPage(style = "width: 100%; height: 100%;",
                            # 10) RESULTADOS
                            tabPanel("RESULTADOS",
                                       mainPanel(style = "margin-left: 16%;",
+                                        actionButton('res', 'MOSTRAR RESULTADOS'),
+                                        br(),
                                         tags$div(id = "1",tags$h2(tags$b("Resumen de evaluación"))),
                                         plotlyOutput("radial_total", height = 500),
                                         dataTableOutput("tabla_resumen"),
@@ -514,6 +516,14 @@ ui <- fluidPage(style = "width: 100%; height: 100%;",
 # ==============================================================================
 server <- function(input, output, session) {
   
+  datos <- reactiveValues(flag=0,resultado=NULL,acciones=NULL)
+  
+  observeEvent(input$res,{
+    
+    datos$flag = 1
+  })
+
+  
   observeEvent(input$menu, {
     if(input$menu == "REGISTRO"){
       hideTab(inputId = "menu", target = "1 RECURSOS")
@@ -544,12 +554,6 @@ server <- function(input, output, session) {
   
   observeEvent(input$suiguiente_0, {
     if(input$sector != "" & input$empresa != ""){
-      
-      data <- data.frame(input$sector,input$empresa,Sys.time())
-      colnames(data) <- c("Sector","Empresa","Timestamp")
-
-      #dbWriteTable(con, 'usuarios',data, temporary = FALSE)
-      dbWriteTable(con, 'usuarios',data, append = TRUE)
       
       updateTabsetPanel(session, "menu",
                         selected = "1 RECURSOS")
@@ -782,12 +786,32 @@ server <- function(input, output, session) {
   
   output$tabla_resumen <- renderDataTable({
     df <- resumen()
+    
+    shiny::validate(
+      need(datos$flag != 0,
+           "")
+    )
+    
     df <- datatable(df, extensions = c('FixedHeader','Buttons'), options = list(fixedHeader = TRUE,dom = 'lBfrtip', 
                                                                                 buttons = c('copy', 'csv', 'excel', 'pdf')),rownames = FALSE,escape = F)
   })
   
   output$tabla_resultados <- renderDataTable({
     df <- resultados()[,c(1,2,3)]
+    
+    shiny::validate(
+      need(datos$flag != 0,
+           "")
+    )
+    
+    resultado <- c(input$actual_1_1,input$actual_1_2,input$actual_1_3,input$actual_2_1,input$actual_2_2,input$actual_2_3,input$actual_3_1,input$actual_3_2,input$actual_3_3,
+                   input$actual_4_1,input$actual_4_2,input$actual_4_3,input$actual_5_1,input$actual_5_2,input$actual_5_3,input$actual_6_1,input$actual_6_2,input$actual_6_3,
+                   input$actual_7_1,input$actual_7_2,input$actual_7_3,input$actual_8_1,input$actual_8_2,input$actual_8_3,input$actual_9_1,input$actual_9_2,input$actual_9_3)
+    
+    resultado <- paste(as.character(resultado),collapse = "")
+    
+    datos$resultado = resultado
+    
     df <- datatable(df, extensions = c('FixedHeader','Buttons'), options = list(fixedHeader = TRUE,dom = 'lBfrtip', 
                                                                                 buttons = c('copy', 'csv', 'excel', 'pdf')),rownames = FALSE,escape = F)
   })
@@ -795,7 +819,23 @@ server <- function(input, output, session) {
   output$tabla_acciones <- renderDataTable({
     df <- datos_tabla_acciones()[,-6]
     df$Acción <- gsub("[.]",".\n",df$Acción)
+    
+    shiny::validate(
+      need(datos$flag != 0,
+           "")
+    )
+    
+    acc <- c(input$deseado_1_1,input$deseado_1_2,input$deseado_1_3,input$deseado_2_1,input$deseado_2_2,input$deseado_2_3,input$deseado_3_1,input$deseado_3_2,input$deseado_3_3,
+                   input$deseado_4_1,input$deseado_4_2,input$deseado_4_3,input$deseado_5_1,input$deseado_5_2,input$deseado_5_3,input$deseado_6_1,input$deseado_6_2,input$deseado_6_3,
+                   input$deseado_7_1,input$deseado_7_2,input$deseado_7_3,input$deseado_8_1,input$deseado_8_2,input$deseado_8_3,input$deseado_9_1,input$deseado_9_2,input$deseado_9_3)
+    acc <- paste(as.character(acc),collapse = "")
 
+    datos$acciones = acc
+
+    data <- data.frame(input$empresa,input$sector,datos$resultado,datos$acciones,Sys.time())
+    colnames(data) <- c("Empresa","Sector","Estado_actual","Estado_deseado","Timestamp")
+
+    dbWriteTable(con, 'usuarios',data, append = TRUE)
     
     df <- datatable(df, extensions = c('FixedHeader','Buttons'), options = list(fixedHeader = TRUE,dom = 'lBfrtip', 
                                                                                 buttons = c('copy', 'csv', 'excel', 'pdf')),rownames = FALSE,escape = F)
@@ -812,6 +852,11 @@ server <- function(input, output, session) {
   
   output$radial_total <- renderPlotly({
     df_resumen <- resumen()
+    
+    shiny::validate(
+      need(datos$flag != 0,
+           "")
+    )
     
     fig <- plot_ly(
       type = 'scatterpolar',
@@ -866,6 +911,11 @@ server <- function(input, output, session) {
   output$radial_resultados <- renderPlotly({
     df_resultados <- resultados()
     
+    shiny::validate(
+      need(datos$flag != 0,
+           "")
+    )
+    
     fig <- plot_ly(
       type = 'scatterpolar',
       mode = 'lines',
@@ -910,6 +960,11 @@ server <- function(input, output, session) {
   
   output$radial_acciones <- renderPlotly({
     df_acciones <- acciones()
+    
+    shiny::validate(
+      need(datos$flag != 0,
+           "")
+    )
     
     fig <- plot_ly(
       type = 'scatterpolar',
@@ -956,6 +1011,11 @@ server <- function(input, output, session) {
     
     filename = paste0("Estado_y_hoja_de_ruta_digital_",Sys.Date(),".xlsx"),
     content  = function(file) {
+      
+      shiny::validate(
+        need(datos$flag != 0,
+             "")
+      )
       
       df_estado_actual <- resultados()[,c(1,2,3)]
       df_estado_deseado <- datos_tabla_acciones()[,c(1,2,3)]
