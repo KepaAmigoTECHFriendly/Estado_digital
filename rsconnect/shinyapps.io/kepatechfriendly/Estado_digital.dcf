@@ -1,0 +1,12 @@
+name: Estado_digital
+title: Estado_digital
+username:
+account: kepatechfriendly
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3253487
+bundleId: 3879659
+url: https://kepatechfriendly.shinyapps.io/Estado_digital/
+when: 1605776669.42162
+asMultiple: FALSE
+asStatic: FALSE
