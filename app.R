@@ -49,7 +49,8 @@ ui <- fluidPage(style = "width: 100%; height: 100%;",
                 # Inicialización shinyjs
                 useShinyjs(),
                 
-                titlePanel(title=div(
+                
+                titlePanel("Estado digital",title=div(
                   a(href="https://techfriendly.es",
                     img(src="img/techfriendly.png",style = 'width: 10vw; high: 60vw;')
                   ),
